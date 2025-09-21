@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>js-dos on GitHub Pages — Example</title>
+  <!-- js-dos CSS & JS from official CDN -->
+  <link rel="stylesheet" href="https://v8.js-dos.com/latest/js-dos.css">
+  <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
+  <style>
+    /* Minimal styling */
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Helvetica,Arial}
+    header{padding:12px;text-align:center;background:#111;color:#fff}
+    #dos { width: 100%; max-width: 1000px; height: 60vh; margin: 20px auto; border: 1px solid #ccc; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+    .controls{max-width:1000px;margin:0 auto;padding:0 12px 24px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    label{font-size:0.9rem}
+    input[type="text"]{flex:1;min-width:200px;padding:8px;border-radius:6px;border:1px solid #ccc}
+    button{padding:8px 12px;border-radius:6px;border:none;background:#0066ff;color:#fff;cursor:pointer}
+    footer{max-width:1000px;margin:16px auto;color:#444;padding:0 12px;font-size:0.9rem}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>js-dos on GitHub Pages — Example</h1>
+    <div style="font-size:0.9rem">Drop your .jsdos bundle into <code>/bundle/</code> and update the URL below.</div>
+  </header>
+
+  <div class="controls">
+    <label for="bundleUrl">Bundle URL (relative to site root):</label>
+    <input id="bundleUrl" type="text" value="bundle/mygame.jsdos" />
+    <button id="loadBtn">Load</button>
+    <button id="reloadBtn">Restart</button>
+  </div>
+
+  <div id="dos" role="application" aria-label="js-dos emulator area"></div>
+
+  <footer>
+    <p><strong>Notes:</strong> Put your .jsdos bundle (or a zip that js-dos accepts) into the <code>bundle/</code> folder in this repo. If your bundle filename is <code>mygame.jsdos</code>, the default works. For more info see the README.</p>
+  </footer>
+
+  <script>
+    // Keep a reference to the Dos instance so we can restart
+    let dosInstance = null;
+
+    async function startEmu(url) {
+      // clear existing
+      if (dosInstance && dosInstance.kill) {
+        try { dosInstance.kill(); } catch(e) { console.warn(e); }
+        dosInstance = null;
+      }
+
+      const el = document.getElementById('dos');
+      el.innerHTML = ''; // clear
+
+      // show a quick placeholder while loading
+      const info = document.createElement('div');
+      info.style.padding = '12px';
+      info.textContent = 'Loading js-dos...';
+      el.appendChild(info);
+
+      try {
+        // Dos() will fetch and run the provided bundle URL.
+        dosInstance = await Dos(el, {
+          url: url,
+          // optional: adjust sizeBehavior; many bundles include their own display settings
+          size: { width: el.clientWidth, height: el.clientHeight }
+        });
+      } catch (err) {
+        el.innerHTML = '<div style="padding:12px;color:#900">Failed to load bundle. Open the console for details.</div>';
+        console.error('js-dos error:', err);
+      }
+    }
+
+    // Controls
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      const url = document.getElementById('bundleUrl').value.trim();
+      if (!url) return alert('Enter bundle URL (e.g. bundle/mygame.jsdos)');
+      startEmu(url);
+    });
+
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+      const url = document.getElementById('bundleUrl').value.trim();
+      if (!url) return alert('Enter bundle URL (e.g. bundle/mygame.jsdos)');
+      // simple restart: kill and reinit
+      startEmu(url);
+    });
+
+    // Auto-load the default on first open
+    window.addEventListener('load', () => {
+      const url = document.getElementById('bundleUrl').value.trim();
+      if (url) startEmu(url);
+      // Resize handling to keep canvas sized approximately
+      window.addEventListener('resize', () => {
+        const el = document.getElementById('dos');
+        if (el && el.children.length && window.Dos) {
+          // if the instance supports resize, many bundles handle it; otherwise, user can reload
+          try {
+            const iframe = el.querySelector('iframe');
+            if (iframe) { iframe.style.width = '100%'; iframe.style.height = (el.clientHeight) + 'px'; }
+          } catch(e){}
+        }
+      });
+    });
+  </script>
+</body>
+</html>
